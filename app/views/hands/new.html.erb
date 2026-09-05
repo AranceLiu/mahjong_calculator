@@ -1,0 +1,151 @@
+<%
+  player_positions = [
+    "md:col-start-2 md:row-start-1",   # 上
+    "md:col-start-3 md:row-start-2",   # 右
+    "md:col-start-2 md:row-start-3",   # 下
+    "md:col-start-1 md:row-start-2"    # 左
+  ]
+%>
+
+<div class="w-full max-w-7xl mx-auto pb-16 lg:flex lg:items-start lg:gap-8"
+     data-controller="game-board">
+
+  <div class="flex-1 min-w-0">
+    <h1 class="text-2xl font-bold mb-1">台灣麻將計分機</h1>
+    <p class="text-sm text-gray-500 mb-6">算好台數之後，填進右邊「本局結算」就能自動算錢。</p>
+
+    <section class="mb-8">
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-3 md:grid-rows-3 md:aspect-square md:max-w-5xl md:mx-auto">
+        <% (0..3).each do |i| %>
+          <div data-game-board-target="playerCard"
+               class="border border-gray-200 bg-white shadow-sm rounded-lg p-3 flex flex-col justify-center transition-colors <%= player_positions[i] %>">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span data-game-board-target="playerWind"
+                    class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">東</span>
+              <input type="text" data-game-board-target="playerName" data-index="<%= i %>"
+                     data-action="change->game-board#updateName"
+                     class="flex-1 min-w-0 max-w-[6rem] text-base font-medium border-b border-transparent focus:outline-none focus:border-emerald-500 bg-transparent" />
+            </div>
+            <div class="text-xl font-bold text-gray-500" data-game-board-target="playerTotal">0</div>
+            <label class="flex items-center gap-1 text-xs text-gray-500 mt-1.5">
+              <input type="radio" name="dealer" value="<%= i %>" data-game-board-target="dealerRadio"
+                     data-action="change->game-board#setDealer" />
+              莊家
+              <span data-game-board-target="dealerStreak" class="hidden text-amber-600 font-semibold"></span>
+            </label>
+          </div>
+        <% end %>
+        <div class="hidden md:flex md:col-start-2 md:row-start-2 items-center justify-center">
+          <div class="relative w-72 h-72 rounded-xl bg-emerald-700 shadow-inner">
+            <div class="absolute top-2 left-6 right-6 h-4 flex gap-0.5">
+              <% 18.times do %><div class="flex-1 rounded-sm bg-gray-50 border border-gray-300"></div><% end %>
+            </div>
+            <div class="absolute bottom-2 left-6 right-6 h-4 flex gap-0.5">
+              <% 18.times do %><div class="flex-1 rounded-sm bg-gray-50 border border-gray-300"></div><% end %>
+            </div>
+            <div class="absolute left-2 top-6 bottom-6 w-4 flex flex-col gap-0.5">
+              <% 18.times do %><div class="flex-1 rounded-sm bg-gray-50 border border-gray-300"></div><% end %>
+            </div>
+            <div class="absolute right-2 top-6 bottom-6 w-4 flex flex-col gap-0.5">
+              <% 18.times do %><div class="flex-1 rounded-sm bg-gray-50 border border-gray-300"></div><% end %>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-14 h-14 rounded-lg bg-white text-red-700 flex items-center justify-center text-3xl shadow">🀄</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside class="lg:w-80 flex-shrink-0 mt-8 lg:mt-0 space-y-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm space-y-3">
+      <h2 class="font-semibold">本局結算</h2>
+
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">台數</label>
+        <input type="number" min="0" data-game-board-target="taiInput"
+               placeholder="幾台？" class="w-full border rounded px-2 py-1 text-sm" />
+      </div>
+
+      <div>
+        <div class="text-xs text-gray-500 mb-1">胡牌的人</div>
+        <div class="flex flex-col gap-1">
+          <% (0..3).each do |i| %>
+            <label class="flex items-center gap-1.5 text-sm">
+              <input type="radio" name="winner" value="<%= i %>" data-game-board-target="winnerRadio"
+                     data-action="change->game-board#onWinnerChange" />
+              <span data-role="name">玩家<%= i + 1 %></span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+
+      <div>
+        <div class="text-xs text-gray-500 mb-1">胡牌方式</div>
+        <label class="flex items-center gap-1.5 text-sm mb-1">
+          <input type="radio" name="winType" value="self"
+                 data-game-board-target="winTypeRadio" data-action="change->game-board#onWinTypeChange" />
+          自摸（其他三家付）
+        </label>
+        <label class="flex items-center gap-1.5 text-sm">
+          <input type="radio" name="winType" value="discard" checked
+                 data-game-board-target="winTypeRadio" data-action="change->game-board#onWinTypeChange" />
+          胡牌（放槍者全付）
+        </label>
+      </div>
+
+      <div data-game-board-target="discarderSection" class="hidden">
+        <div class="text-xs text-gray-500 mb-1">放槍的人</div>
+        <div class="flex flex-col gap-1">
+          <% (0..3).each do |i| %>
+            <label class="flex items-center gap-1.5 text-sm">
+              <input type="radio" name="discarder" value="<%= i %>" data-game-board-target="discarderRadio" />
+              <span data-role="name">玩家<%= i + 1 %></span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-gray-500 block mb-1">常用設定</label>
+        <select data-game-board-target="ratePreset" data-action="change->game-board#applyRatePreset"
+                class="w-full border rounded px-2 py-1 text-sm mb-2">
+          <option value="0">50 底 / 20 台</option>
+          <option value="1">0 底 / 10 台</option>
+          <option value="2">100 底 / 30 台</option>
+          <option value="custom">自訂</option>
+        </select>
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <label class="text-xs text-gray-500 block mb-1">底</label>
+            <input type="number" min="0" data-game-board-target="flatBase"
+                   data-action="change->game-board#updateFlatBase"
+                   class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+          <div class="flex-1">
+            <label class="text-xs text-gray-500 block mb-1">每台</label>
+            <input type="number" min="0" data-game-board-target="unitPrice"
+                   data-action="change->game-board#updateUnitPrice"
+                   class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">每人金額 = 底 + 台數 × 每台</p>
+      </div>
+
+      <button type="button" data-action="game-board#settle"
+              class="w-full py-2 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium cursor-pointer">
+        結算這局
+      </button>
+      <p class="text-xs text-gray-400">莊家贏或莊家放槍，自動加算莊家台（上莊1台、連莊N次是 2N+1 台）。分數只存在這台手機/瀏覽器裡。</p>
+    </div>
+
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-semibold text-sm">結算紀錄</h2>
+        <button type="button" data-action="game-board#resetScores" class="text-xs text-red-500 underline cursor-pointer">重設分數</button>
+      </div>
+      <div data-game-board-target="log"></div>
+    </div>
+  </aside>
+</div>
